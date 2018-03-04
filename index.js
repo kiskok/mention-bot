@@ -6,12 +6,18 @@ var API_KEY = "";
 var SECRET_KEY = "";
 var HOSTNAME = "";
 
-//exports.handler = (event, context, callback) => {
-  module.exports = function(robot) {
-    robot.hear(/(^|\W)(@[a-z\d][\w-]*)/ig, function(msg){
+exports.handler = (event, context, callback) => {
   
-      var ids = ["okamoto-ke","sekine-mo"];
-
+      var messageBody = event.body;
+      var roomName = event.name;
+      
+      var ids = [];
+      
+      for(var name of messageBody.match(/(^|\W)(@[a-z\d][\w-]*)/ig)) {
+        name = name.substring(2, name.length)
+        ids.push(name);
+      }
+      
       async.mapSeries(ids, function(id, callback) {
         
 
@@ -20,7 +26,7 @@ var HOSTNAME = "";
         var requestUri = "/api/1.0/talks/" + jid + "/messages";
         var url = "https://" + HOSTNAME + requestUri;
         var body = JSON.stringify({
-            "body": "heeeee"
+            "body": "会議室 : " + roomName + "でメンションされました。\n\n"  + messageBody
         });
 
         var contentType = "application/json";
@@ -51,15 +57,12 @@ var HOSTNAME = "";
         console.log(id);
         
         request.post(options,callback);
-        
-        
+
     }, function(err, res) {
       if (err == null) {
         
       }
-     // context.done();
+      context.done();
 
     });
-
-  });
 };
