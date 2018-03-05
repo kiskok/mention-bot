@@ -5,28 +5,28 @@ var async = require('async');
 var API_KEY = "";
 var SECRET_KEY = "";
 var HOSTNAME = "";
+var DOMAIN ="";
 
 exports.handler = (event, context, callback) => {
   
       var messageBody = event.body;
-      var roomName = event.name;
+      var roomName = event.talk;
       
       var ids = [];
       
       for(var name of messageBody.match(/(^|\W)(@[a-z\d][\w-]*)/ig)) {
-        name = name.substring(2, name.length)
+        name = name.substring(name.indexOf("@") + 1, name.length) //一時的な修正
         ids.push(name);
       }
       
       async.mapSeries(ids, function(id, callback) {
-        
-
-        var jid = id + "@" + HOSTNAME;
+    
+        var jid = id + "@" + DOMAIN;
 
         var requestUri = "/api/1.0/talks/" + jid + "/messages";
         var url = "https://" + HOSTNAME + requestUri;
         var body = JSON.stringify({
-            "body": "会議室 : " + roomName + "でメンションされました。\n\n"  + messageBody
+            "body": "会議室 : [" + roomName + "] でメンションされました。\n\n"  + messageBody
         });
 
         var contentType = "application/json";
@@ -57,7 +57,7 @@ exports.handler = (event, context, callback) => {
         console.log(id);
         
         request.post(options,callback);
-
+        
     }, function(err, res) {
       if (err == null) {
         
