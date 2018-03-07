@@ -2,32 +2,49 @@ var CryptoJS = require("crypto-js");
 var request = require("request");
 var async = require('async');
 
-var API_KEY = "";
-var SECRET_KEY = "";
-var HOSTNAME = "";
-var DOMAIN ="";
+var API_KEY = process.env['apiKey'];
+var SECRET_KEY = process.env['secretKey'];
+var HOSTNAME = process.env['hostName'];
+var hookRoomJid = process.env['hookRoomJid'];
+var userJid = process.env['userJid'];
 
 exports.handler = (event, context, callback) => {
-  
-      var messageBody = event.body;
-      var roomName = event.talk;
+   // module.exports = function(robot) {  //hubot用
+    //     robot.hear(/(^|\W)(@[a-z\d][\w-]*)/ig, function(msg){
       
-      var ids = [];
-      
-      for(var name of messageBody.match(/(^|\W)(@[a-z\d][\w-]*)/ig)) {
-        name = name.substring(name.indexOf("@") + 1, name.length) //一時的な修正
-        ids.push(name);
-      }
-      
-      async.mapSeries(ids, function(id, callback) {
+    var messageBody = event.body;
+    var roomName = event.talk;
+    var speaker = event.speaker;
+    var talkJid = event.talkJid;
     
-        var jid = id + "@" + DOMAIN;
-
-        var requestUri = "/api/1.0/talks/" + jid + "/messages";
+    if (talkJid == hookRoomJid) {
+      context.done();
+    }
+    
+    var ids = [];
+    for(var name of messageBody.match(/(^|\W)(@[a-z\d][\w-]*)/ig)) {
+        name = name.substring(name.indexOf("@") + 1, name.length)
+        ids.push(name + "@" + userJid);
+    }
+    
+    ids.push(hookRoomJid);
+      
+      async.each(ids, function(id, callback) {
+        
+        var requestUri = "/api/1.0/talks/" + id + "/messages";
         var url = "https://" + HOSTNAME + requestUri;
-        var body = JSON.stringify({
-            "body": "会議室 : [" + roomName + "] でメンションされました。\n\n"  + messageBody
-        });
+        
+        var body;
+        
+        if (id == hookRoomJid) {
+          body = JSON.stringify({
+              "body": "トーク名 : [" + roomName + "] でメンションされました。\n\n"  + messageBody + "\n\n発言者 : " + speaker
+          });
+        } else {
+          body = JSON.stringify({
+              "body": "トーク名 : [" + roomName + "] でメンションされました。\n\n"  + messageBody
+          });
+        }
 
         var contentType = "application/json";
         var timestamp = (new Date()).toISOString();
@@ -65,4 +82,5 @@ exports.handler = (event, context, callback) => {
       context.done();
 
     });
+    // });
 };
